@@ -1,0 +1,33 @@
+name: Build and unit test on pull requests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        dotnet-version: [ '8.0.x' ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+       dotnet-version: ${{ matrix.dotnet-version }}
+    - name : Cache nuget packages
+      uses: actions/cache@v2
+      with:
+        path: ${{ github.workspace }}/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    - name: Restore dependencies
+      run: dotnet restore Pixel.Automation.Service.sln
+    - name: Build
+      run: dotnet build Pixel.Automation.Service.sln --no-restore
+    - name: Test
+      run: dotnet test Pixel.Automation.Service.sln --no-build --verbosity normal
